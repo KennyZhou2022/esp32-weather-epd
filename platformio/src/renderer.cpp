@@ -74,8 +74,6 @@
   #define ACCENT_COLOR GxEPD_BLACK
 #endif
 
-static const uint16_t STATUS_BAR_WINDOW_HEIGHT = 48;
-
 /* Returns the string width in pixels
  */
 uint16_t getStringWidth(const String &text)
@@ -222,38 +220,17 @@ void drawMultiLnString(int16_t x, int16_t y, const String &text,
   return;
 } // end drawMultiLnString
 
-static String fitStringToWidth(const String &text, uint16_t maxWidth)
-{
-  if (text.isEmpty() || getStringWidth(text) <= maxWidth)
-  {
-    return text;
-  }
-
-  const String ellipsis = "...";
-  if (getStringWidth(ellipsis) > maxWidth)
-  {
-    return "";
-  }
-
-  String truncated = text;
-  while (!truncated.isEmpty()
-      && getStringWidth(truncated + ellipsis) > maxWidth)
-  {
-    truncated.remove(truncated.length() - 1);
-  }
-  truncated.trim();
-  return truncated + ellipsis;
-}
-
-static void initDisplayBase(bool initial)
+/* Initialize e-paper display
+ */
+void initDisplay()
 {
   pinMode(PIN_EPD_PWR, OUTPUT);
   digitalWrite(PIN_EPD_PWR, HIGH);
 #ifdef DRIVER_WAVESHARE
-  display.init(115200, initial, 2, false);
+  display.init(115200, true, 2, false);
 #endif
 #ifdef DRIVER_DESPI_C02
-  display.init(115200, initial, 10, false);
+  display.init(115200, true, 10, false);
 #endif
   // remap spi
   SPI.end();
@@ -266,31 +243,11 @@ static void initDisplayBase(bool initial)
   display.setTextSize(1);
   display.setTextColor(GxEPD_BLACK);
   display.setTextWrap(false);
-}
-
-/* Initialize e-paper display for a full refresh.
- */
-void initDisplay()
-{
-  initDisplayBase(true);
   // display.fillScreen(GxEPD_WHITE);
   display.setFullWindow();
   display.firstPage(); // use paged drawing mode, sets fillScreen(GxEPD_WHITE)
   return;
 } // end initDisplay
-
-/* Initialize e-paper display for a status bar refresh.
- */
-void initStatusBarDisplay()
-{
-  // initial=false prevents GxEPD2 from promoting this partial update to a full
-  // screen refresh, preserving the previous weather content on API failures.
-  initDisplayBase(false);
-  display.setPartialWindow(0, DISP_HEIGHT - STATUS_BAR_WINDOW_HEIGHT,
-                           DISP_WIDTH, STATUS_BAR_WINDOW_HEIGHT);
-  display.firstPage(); // use paged drawing mode, clears the selected window
-  return;
-} // end initStatusBarDisplay
 
 /* Power-off e-paper display
  */
@@ -1696,8 +1653,6 @@ void drawStatusBar(const String &statusStr, const String &refreshTimeStr,
   String dataStr;
   uint16_t dataColor = GxEPD_BLACK;
   display.setFont(&FONT_6pt8b);
-  display.fillRect(0, DISP_HEIGHT - STATUS_BAR_WINDOW_HEIGHT,
-                   DISP_WIDTH, STATUS_BAR_WINDOW_HEIGHT, GxEPD_WHITE);
   int pos = DISP_WIDTH - 2;
   const int sp = 2;
 
@@ -1762,16 +1717,8 @@ void drawStatusBar(const String &statusStr, const String &refreshTimeStr,
   dataColor = ACCENT_COLOR;
   if (!statusStr.isEmpty())
   {
-    const int maxStatusWidth = pos - 24;
-    dataStr = maxStatusWidth > 0
-            ? fitStringToWidth(statusStr, maxStatusWidth)
-            : "";
-    if (dataStr.isEmpty())
-    {
-      return;
-    }
-    drawString(pos, DISP_HEIGHT - 1 - 2, dataStr, RIGHT, dataColor);
-    pos -= getStringWidth(dataStr) + 24;
+    drawString(pos, DISP_HEIGHT - 1 - 2, statusStr, RIGHT, dataColor);
+    pos -= getStringWidth(statusStr) + 24;
     display.drawInvertedBitmap(pos, DISP_HEIGHT - 1 - 18, error_icon_24x24,
                                24, 24, dataColor);
   }
@@ -1809,3 +1756,4 @@ void drawError(const uint8_t *bitmap_196x196,
                              bitmap_196x196, 196, 196, ACCENT_COLOR);
   return;
 } // end drawError
+

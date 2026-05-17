@@ -50,67 +50,6 @@ static owm_resp_air_pollution_t owm_air_pollution;
 
 Preferences prefs;
 
-static const char *PREF_LAST_SUCCESSFUL_REFRESH = "lastRefresh";
-
-void saveLastSuccessfulRefresh(tm *timeInfo)
-{
-  time_t timestamp = mktime(timeInfo);
-  if (timestamp <= 0)
-  {
-    return;
-  }
-
-  if (prefs.begin(NVS_NAMESPACE, false))
-  {
-    prefs.putLong64(PREF_LAST_SUCCESSFUL_REFRESH,
-                    static_cast<int64_t>(timestamp));
-    prefs.end();
-  }
-}
-
-void getLastSuccessfulRefreshTimeStr(String &s)
-{
-  int64_t timestamp = 0;
-  if (prefs.begin(NVS_NAMESPACE, true))
-  {
-    timestamp = prefs.getLong64(PREF_LAST_SUCCESSFUL_REFRESH, 0);
-    prefs.end();
-  }
-
-  if (timestamp <= 0)
-  {
-    s = TXT_UNKNOWN;
-    return;
-  }
-
-  time_t previousRefresh = static_cast<time_t>(timestamp);
-  tm previousTimeInfo = {};
-  localtime_r(&previousRefresh, &previousTimeInfo);
-  getRefreshTimeStr(s, true, &previousTimeInfo);
-}
-
-String getFetchErrorStatus(const String &source, int code)
-{
-  String status = source + " " + String(code, DEC);
-  const char *phrase = getHttpResponsePhrase(code);
-  if (phrase[0] != '\0')
-  {
-    status += ": " + String(phrase);
-  }
-  return status;
-}
-
-void drawStatusBarOnly(const String &statusStr, const String &refreshTimeStr,
-                       int wifiRSSI, uint32_t batteryVoltage)
-{
-  initStatusBarDisplay();
-  do
-  {
-    drawStatusBar(statusStr, refreshTimeStr, wifiRSSI, batteryVoltage);
-  } while (display.nextPage());
-  powerOffDisplay();
-}
-
 /* Put esp32 into ultra low-power deep sleep (<11μA).
  * Aligns wake time to the minute. Sleep times defined in config.cpp.
  */
@@ -323,22 +262,29 @@ void setup()
   int rxStatus = getOWMonecall(client, owm_onecall);
   if (rxStatus != HTTP_CODE_OK)
   {
-    statusStr = getFetchErrorStatus("One Call " + OWM_ONECALL_VERSION + " API",
-                                    rxStatus);
-    Serial.println(statusStr);
-    getLastSuccessfulRefreshTimeStr(tmpStr);
     killWiFi();
-    drawStatusBarOnly(statusStr, tmpStr, wifiRSSI, batteryVoltage);
+    statusStr = "One Call " + OWM_ONECALL_VERSION + " API";
+    tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
+    initDisplay();
+    do
+    {
+      drawError(wi_cloud_down_196x196, statusStr, tmpStr);
+    } while (display.nextPage());
+    powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
   rxStatus = getOWMairpollution(client, owm_air_pollution);
   if (rxStatus != HTTP_CODE_OK)
   {
-    statusStr = getFetchErrorStatus("Air Pollution API", rxStatus);
-    Serial.println(statusStr);
-    getLastSuccessfulRefreshTimeStr(tmpStr);
     killWiFi();
-    drawStatusBarOnly(statusStr, tmpStr, wifiRSSI, batteryVoltage);
+    statusStr = "Air Pollution API";
+    tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
+    initDisplay();
+    do
+    {
+      drawError(wi_cloud_down_196x196, statusStr, tmpStr);
+    } while (display.nextPage());
+    powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
   killWiFi(); // WiFi no longer needed
@@ -393,7 +339,6 @@ void setup()
 
   String refreshTimeStr;
   getRefreshTimeStr(refreshTimeStr, timeConfigured, &timeInfo);
-  saveLastSuccessfulRefresh(&timeInfo);
   String dateStr;
   getDateStr(dateStr, &timeInfo);
 
@@ -422,3 +367,4 @@ void setup()
 void loop()
 {
 } // end loop
+

@@ -69,7 +69,6 @@ void drawMultiLnString(int16_t x, int16_t y, const String &text,
                        uint16_t max_lines, int16_t line_spacing,
                        uint16_t color=GxEPD_BLACK);
 void initDisplay();
-void initStatusBarDisplay();
 void powerOffDisplay();
 void drawCurrentConditions(const owm_current_t &current,
                            const owm_daily_t &today,
