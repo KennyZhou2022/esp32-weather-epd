@@ -203,7 +203,7 @@ void setup()
   prefs.end();
 
   String statusStr = {};
-  String tmpStr = {};
+  // String tmpStr = {}; // Used by the commented-out error display path below.
   tm timeInfo = {};
 
   // START WIFI
@@ -212,24 +212,30 @@ void setup()
   if (wifiStatus != WL_CONNECTED)
   { // WiFi Connection Failed
     killWiFi();
-    initDisplay();
+    // Preserve the previous e-paper contents when data cannot be refreshed.
+    //
+    // Previous behavior:
+    // initDisplay();
     if (wifiStatus == WL_NO_SSID_AVAIL)
     {
       Serial.println(TXT_NETWORK_NOT_AVAILABLE);
-      do
-      {
-        drawError(wifi_x_196x196, TXT_NETWORK_NOT_AVAILABLE);
-      } while (display.nextPage());
+      // Previous behavior:
+      // do
+      // {
+      //   drawError(wifi_x_196x196, TXT_NETWORK_NOT_AVAILABLE);
+      // } while (display.nextPage());
     }
     else
     {
       Serial.println(TXT_WIFI_CONNECTION_FAILED);
-      do
-      {
-        drawError(wifi_x_196x196, TXT_WIFI_CONNECTION_FAILED);
-      } while (display.nextPage());
+      // Previous behavior:
+      // do
+      // {
+      //   drawError(wifi_x_196x196, TXT_WIFI_CONNECTION_FAILED);
+      // } while (display.nextPage());
     }
-    powerOffDisplay();
+    // Previous behavior:
+    // powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
 
@@ -240,12 +246,15 @@ void setup()
   {
     Serial.println(TXT_TIME_SYNCHRONIZATION_FAILED);
     killWiFi();
-    initDisplay();
-    do
-    {
-      drawError(wi_time_4_196x196, TXT_TIME_SYNCHRONIZATION_FAILED);
-    } while (display.nextPage());
-    powerOffDisplay();
+    // Preserve the previous e-paper contents when data cannot be refreshed.
+    //
+    // Previous behavior:
+    // initDisplay();
+    // do
+    // {
+    //   drawError(wi_time_4_196x196, TXT_TIME_SYNCHRONIZATION_FAILED);
+    // } while (display.nextPage());
+    // powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
 
@@ -263,28 +272,39 @@ void setup()
   if (rxStatus != HTTP_CODE_OK)
   {
     killWiFi();
-    statusStr = "One Call " + OWM_ONECALL_VERSION + " API";
-    tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
-    initDisplay();
-    do
-    {
-      drawError(wi_cloud_down_196x196, statusStr, tmpStr);
-    } while (display.nextPage());
-    powerOffDisplay();
+    Serial.println("One Call " + OWM_ONECALL_VERSION + " API "
+                   + String(rxStatus, DEC) + ": "
+                   + getHttpResponsePhrase(rxStatus));
+    // Preserve the previous e-paper contents when data cannot be refreshed.
+    //
+    // Previous behavior:
+    // statusStr = "One Call " + OWM_ONECALL_VERSION + " API";
+    // tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
+    // initDisplay();
+    // do
+    // {
+    //   drawError(wi_cloud_down_196x196, statusStr, tmpStr);
+    // } while (display.nextPage());
+    // powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
   rxStatus = getOWMairpollution(client, owm_air_pollution);
   if (rxStatus != HTTP_CODE_OK)
   {
     killWiFi();
-    statusStr = "Air Pollution API";
-    tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
-    initDisplay();
-    do
-    {
-      drawError(wi_cloud_down_196x196, statusStr, tmpStr);
-    } while (display.nextPage());
-    powerOffDisplay();
+    Serial.println("Air Pollution API " + String(rxStatus, DEC) + ": "
+                   + getHttpResponsePhrase(rxStatus));
+    // Preserve the previous e-paper contents when data cannot be refreshed.
+    //
+    // Previous behavior:
+    // statusStr = "Air Pollution API";
+    // tmpStr = String(rxStatus, DEC) + ": " + getHttpResponsePhrase(rxStatus);
+    // initDisplay();
+    // do
+    // {
+    //   drawError(wi_cloud_down_196x196, statusStr, tmpStr);
+    // } while (display.nextPage());
+    // powerOffDisplay();
     beginDeepSleep(startTime, &timeInfo);
   }
   killWiFi(); // WiFi no longer needed
@@ -367,4 +387,3 @@ void setup()
 void loop()
 {
 } // end loop
-
